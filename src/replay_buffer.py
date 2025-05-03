@@ -1,13 +1,8 @@
-class ReplayBuffer:
-    def __init__(self, capacity):
-        self.buffer = deque(maxlen=capacity)
+# class ReplayBuffer:
+#     def __init__(self, capacity, state_dim: int):
 
-    def add(self, state, action, reward, next_state):
-        self.buffer.append(Transition(*args))
+#     def add(self, state, action, reward, next_state):
 
-    def sample(self, batch_size):
-        batch = random.sample(self.buffer, batch_size)
-        return Transition(*zip(*batch))
+#     def sample(self, batch_size):
 
-    def __len__(self):
-        return len(self.buffer)
+#     def __len__(self):

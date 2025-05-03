@@ -28,9 +28,9 @@ class GridWorldEnv(gym.Env):
         self._goal_location = np.array([-1, -1], dtype=int)
         self._action_to_direction = {
             Actions.RIGHT.value: np.array([1, 0]),
-            Actions.UP.value: np.array([0, 1]),
+            Actions.UP.value: np.array([0, -1]),
             Actions.LEFT.value: np.array([-1, 0]),
-            Actions.DOWN.value: np.array([0, -1]),
+            Actions.DOWN.value: np.array([0, 1]),
         }
         assert render_mode is None or render_mode in self.metadata["render_modes"]
         self.render_mode = render_mode

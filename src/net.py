@@ -1,4 +1,4 @@
-import flax.nnx as nnx
+from flax import nnx
 
 
 class QNetwork(nnx.Module):
