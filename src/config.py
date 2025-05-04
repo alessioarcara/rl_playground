@@ -1,23 +1,33 @@
-import wandb
-from wandb.sdk.wandb_config import Config
+from pathlib import Path
+
+import yaml
+from pydantic import BaseModel
 
 
-def init_wandb() -> Config:
-    wandb.init(
-        project="rl-playground",
-        config={
-            "batch_size": 32,
-            "lr": 1e-3,
-            "gamma": 0.99,
-            "eps_start": 1.0,
-            "eps_end": 0.05,
-            "hidden_dim": 128,
-            "n_episodes": 500,
-            "max_steps_per_episode": 32,
-            "grid_size": 5,
-            "seed": 0,
-            "target_update_frequency": 4,
-            "evaluation_frequency": 50,
-        },
-    )
-    return wandb.config
+class RLConfig(BaseModel):
+    batch_size: int
+    lr: float
+    gamma: float
+    eps_start: float
+    eps_end: float
+    decay_steps: int
+    hidden_dim: int
+    n_episodes: int
+    max_steps_per_episode: int
+    grid_size: int | None
+    seed: int
+    target_update_frequency: int
+    evaluation_frequency: int
+    replay_memory_size: int
+    warmup_start_size: int
+
+
+def _load_yaml(path: str | Path):
+    return yaml.safe_load(Path(path).expanduser().read_text()) or {}
+
+
+def build_cfg(*yaml_paths: str | Path) -> RLConfig:
+    merged = {}
+    for p in yaml_paths:  # ordine = priorità (l’ultimo vince)
+        merged.update(_load_yaml(p))
+    return RLConfig(**merged)  # validazione
