@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "rl_playground"
 version = "0.0.1"
-dependencies = ["jax[cuda12]", "flax", "optax", "wandb", "gymnasium"]
+dependencies = ["jax[cuda12]", "flax", "optax", "wandb", "gymnasium", "ale-py"]
 
 [project.optional-dependencies]
 dev = ["pre-commit", "nbstripout", "ruff", "mypy", "pytest"]

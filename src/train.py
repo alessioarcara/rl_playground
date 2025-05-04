@@ -1,4 +1,5 @@
 import os
+from typing import Sequence, Union
 
 import gymnasium as gym
 from gym.wrappers import RecordVideo
@@ -10,20 +11,19 @@ from src.agent import DeepQLearningAgent
 from src.config import RLConfig
 
 
-def evaluate_agent(config: RLConfig, env: gym.Env, agent: DeepQLearningAgent) -> float:
+def evaluate_agent(env: gym.Env, agent: DeepQLearningAgent) -> float:
     old_eps = agent.eps
     agent.eps = 0.0  # Set greedy policy
 
-    state, _ = env.reset()
+    state, _ = env.reset(seed=33)
     total_reward = 0.0
+    done = False
 
-    for _ in range(config.max_steps_per_episode):
+    while not done:
         action = agent.act(state)
         state, reward, terminated, truncated, _ = env.step(action)
+        done = terminated or truncated
         total_reward += reward
-
-        if terminated or truncated:
-            break
 
     agent.eps = old_eps  # Restore exploration parameter
     return total_reward
@@ -32,16 +32,21 @@ def evaluate_agent(config: RLConfig, env: gym.Env, agent: DeepQLearningAgent) ->
 def train_dql_agent(
     config: RLConfig,
     env: gym.Env,
+    state_dim: Union[Sequence[int] | int],
     eval_env: gym.Env | None = None,
     video_dir: str = "./videos",
 ):
     logger.info("Starting training with config: {}", config)
 
-    state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.n
     logger.info("State dim: {}, Action dim: {}", state_dim, action_dim)
 
-    agent = DeepQLearningAgent(config, state_dim, action_dim, config.decay_steps)
+    agent = DeepQLearningAgent(
+        config=config,
+        state_dim=state_dim,
+        action_dim=action_dim,
+        decay_steps=config.decay_steps,
+    )
 
     with wandb.init(project="rl-playground", config=config.model_dump()) as _:
         wandb.define_metric("train/episode_reward", step_metric="episode")
@@ -52,8 +57,9 @@ def train_dql_agent(
         for ep in tqdm(range(1, config.n_episodes + 1), desc="Episodes"):
             state, _ = env.reset()
             ep_reward = 0.0
+            done = False
 
-            for _ in range(config.max_steps_per_episode):
+            while not done:
                 action = agent.act(state)
                 next_state, reward, terminated, truncated, _ = env.step(action)
                 done = terminated or truncated
@@ -63,9 +69,6 @@ def train_dql_agent(
                 state = next_state
 
                 wandb.log({"global_step": agent.step, "epsilon": agent.eps})
-
-                if done:
-                    break
 
             wandb.log(
                 {
@@ -80,7 +83,7 @@ def train_dql_agent(
                     video_dir,
                     episode_trigger=lambda e: True,
                 )
-                eval_reward = evaluate_agent(config, video_env, agent)
+                eval_reward = evaluate_agent(video_env, agent)
                 video_env.close()
 
                 video_path = os.path.join(video_dir, "rl-video-episode-0.mp4")
@@ -92,5 +95,3 @@ def train_dql_agent(
                 )
 
     env.close()
-    if eval_env:
-        eval_env.close()

@@ -1,15 +1,19 @@
+from typing import Sequence, Union
+
 import jax.numpy as jnp
 import numpy as np
 
 
 class ReplayBuffer:
-    def __init__(self, max_size: int, state_dim: int):
+    def __init__(self, max_size: int, state_dim: Union[int, Sequence[int]]):
         self.max_size = max_size
+        if isinstance(state_dim, int):
+            self.state_shape = (state_dim,)
 
-        self.states = np.zeros((max_size, state_dim), dtype=np.float32)
+        self.states = np.zeros((max_size, *state_dim), dtype=np.float32)
         self.actions = np.zeros((max_size,), dtype=np.int32)
         self.rewards = np.zeros((max_size,), dtype=np.float32)
-        self.next_states = np.zeros((max_size, state_dim), dtype=np.float32)
+        self.next_states = np.zeros((max_size, *state_dim), dtype=np.float32)
         self.dones = np.zeros((max_size,), dtype=np.float32)
 
         self.size = 0
@@ -22,7 +26,7 @@ class ReplayBuffer:
         reward: float,
         next_state: np.ndarray,
         done: bool,
-    ) -> None:
+    ) -> tuple[jnp.array, jnp.array, jnp.array, jnp.array, jnp.array]:
         self.states[self.ptr] = state
         self.actions[self.ptr] = action
         self.rewards[self.ptr] = reward

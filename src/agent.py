@@ -1,3 +1,5 @@
+from typing import Sequence, Union
+
 import flax.nnx as nnx
 import jax
 import jax.numpy as jnp
@@ -6,14 +8,14 @@ import optax
 
 from src.config import RLConfig
 
-from .net import QNetwork
+from .net import ConvNetwork
 from .replay_buffer import ReplayBuffer
 
 
 @nnx.jit
 def train_step(
     optim: nnx.Optimizer,
-    target_model: QNetwork,
+    target_model: nnx.Module,
     states: jnp.ndarray,
     actions: int,
     rewards: float,
@@ -21,7 +23,7 @@ def train_step(
     dones: bool,
     gamma: float,
 ):
-    def loss_fn(model: QNetwork):
+    def loss_fn(model: nnx.Module):
         q_s = model(states)  # Q(s,·)
         q_sa = jnp.take_along_axis(q_s, actions[:, None], axis=1).squeeze()  # Q(s,a)
         next_q_s = target_model(next_states)  # Q(s',·)
@@ -38,7 +40,7 @@ class DeepQLearningAgent:
     def __init__(
         self,
         config: RLConfig,
-        state_dim: int,
+        state_dim: Union[Sequence[int], int],
         action_dim: int,
         decay_steps: int,
     ):
@@ -53,14 +55,20 @@ class DeepQLearningAgent:
         self.target_update_frequency = config.target_update_frequency
         self.step = 0
 
-        q_net = QNetwork(
-            state_dim, config.hidden_dim, action_dim, rngs=nnx.Rngs(config.seed)
-        )
+        q_net = ConvNetwork(state_dim, action_dim, rngs=nnx.Rngs(config.seed))
+        # q_net = GridNet(state_dim, action_dim, rngs=nnx.Rngs(config.seed))
+        # q_net = FullyConnectedNetwork(
+        #     state_dim, config.hidden_dim, action_dim, rngs=nnx.Rngs(config.seed)
+        # )
         tx = optax.adam(config.lr)
         self.optim = nnx.Optimizer(q_net, tx)
-        self.target_q_net = QNetwork(
-            state_dim, config.hidden_dim, action_dim, rngs=nnx.Rngs(config.seed)
+        self.target_q_net = ConvNetwork(
+            state_dim, action_dim, rngs=nnx.Rngs(config.seed)
         )
+        # self.target_q_net = GridNet(state_dim, action_dim, rngs=nnx.Rngs(config.seed))
+        # self.target_q_net = FullyConnectedNetwork(
+        #     state_dim, config.hidden_dim, action_dim, rngs=nnx.Rngs(config.seed)
+        # )
         self.update_target()
         self.replay_buffer = ReplayBuffer(config.replay_memory_size, state_dim)
 
@@ -84,8 +92,11 @@ class DeepQLearningAgent:
         if self.rng.random() < self.eps:
             return self.rng.integers(0, self.action_dim)
         # Exploitation
-        q_s = self.optim.model(jnp.asarray(state))
-        return int(jnp.argmax(q_s))
+        x = jnp.asarray(state)
+        if len(x.shape) == 3:
+            x = jnp.expand_dims(x, axis=0)
+        q_s = self.optim.model(x)
+        return int(jnp.argmax(q_s[0]))
 
     def learn(
         self,

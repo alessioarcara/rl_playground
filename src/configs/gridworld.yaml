@@ -5,11 +5,11 @@ eps_start: 1.0
 eps_end: 0.1
 decay_steps: 10000
 hidden_dim: 128 
-n_episodes: 2000
+n_episodes: 50000
 max_steps_per_episode: 100
 grid_size: 8
 seed: 0
-target_update_frequency: 500
-evaluation_frequency: 100
-replay_memory_size: 50000
-warmup_start_size: 5000
+target_update_frequency: 1000
+evaluation_frequency: 500
+replay_memory_size: 500000
+warmup_start_size: 50000

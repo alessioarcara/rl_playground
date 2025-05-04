@@ -1,0 +1,15 @@
+batch_size: 32 
+lr: 2.5e-4
+gamma: 0.99
+eps_start: 1.0
+eps_end: 0.1
+decay_steps: 1000000
+hidden_dim: 128 
+n_episodes: 3000
+max_steps_per_episode: 27000
+grid_size: 0
+seed: 0
+target_update_frequency: 10000
+evaluation_frequency: 300 
+replay_memory_size: 250000 
+warmup_start_size: 12500
